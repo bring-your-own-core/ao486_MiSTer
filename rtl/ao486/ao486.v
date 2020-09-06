@@ -62,7 +62,36 @@ module ao486 (
     
     input               avalon_io_waitrequest,
 
-    output [31:0] eip
+    output  [31:0]      eip,
+    output  [1:0]       state_transducer,
+
+    //-------------------------------------------------------------------------- New signals to bypass Avalon (Outputs)
+    output              ifill_req_readcode_do,
+    output  [31:0]      ifill_req_readcode_address,
+    output              store_req_writeburst_do,
+    output  [31:0]      store_req_writeburst_address,
+    output  [55:0]      store_req_writeburst_data,
+    output  [3:0]       store_req_writeburst_length,
+    output              store_req_writeline_do,
+    output  [31:0]      store_req_writeline_address,
+    output  [127:0]     store_req_writeline_line,
+    output              load_req_readburst_do,
+    output  [31:0]      load_req_readburst_address,
+    output  [3:0]       load_req_readburst_byte_length,
+    output              load_req_readline_do,
+    output  [31:0]      load_req_readline_address,
+
+    //-------------------------------------------------------------------------- New signals to bypass Avalon (Inputs)
+    input               transducer_ao486_readcode_done,
+    input  [127:0]      transducer_ao486_readcode_line,
+    input  [31:0]       transducer_ao486_readcode_partial,
+    input               transducer_ao486_readcode_partial_done,
+    input               transducer_ao486_writeburst_done,
+    input               transducer_ao486_writeline_done,
+    input               transducer_ao486_readburst_done,
+    input  [95:0]       transducer_ao486_readburst_data,
+    input               transducer_ao486_readline_done,
+    input  [127:0]      transducer_ao486_readline_line 
 );
 
 //------------------------------------------------------------------------------
@@ -559,7 +588,36 @@ memory memory_inst(
     .avm_read                      (avm_read),                      //output
     .avm_waitrequest               (avm_waitrequest),               //input
     .avm_readdatavalid             (avm_readdatavalid),             //input
-    .avm_readdata                  (avm_readdata)                   //input [31:0]
+    .avm_readdata                  (avm_readdata),                  //input [31:0]
+    .state_transducer              (state_transducer),
+
+    //New signals for bypassing Avalon (Outputs to TRI)
+    .ifill_req_readcode_do             (ifill_req_readcode_do),
+    .ifill_req_readcode_address        (ifill_req_readcode_address),
+    .store_req_writeburst_do           (store_req_writeburst_do),
+    .store_req_writeburst_address      (store_req_writeburst_address),
+    .store_req_writeburst_data         (store_req_writeburst_data),
+    .store_req_writeburst_length       (store_req_writeburst_length),
+    .store_req_writeline_do            (store_req_writeline_do),
+    .store_req_writeline_address       (store_req_writeline_address),
+    .store_req_writeline_line          (store_req_writeline_line),
+    .load_req_readburst_do             (load_req_readburst_do),
+    .load_req_readburst_address        (load_req_readburst_address),
+    .load_req_readburst_byte_length    (load_req_readburst_byte_length),
+    .load_req_readline_do              (load_req_readline_do),
+    .load_req_readline_address         (load_req_readline_address),
+
+    //New signals for bypassing Avalon (Inputs from TRI)
+    .transducer_ao486_readcode_line         (transducer_ao486_readcode_line),
+    .transducer_ao486_readcode_partial      (transducer_ao486_readcode_partial),
+    .transducer_ao486_readcode_done         (transducer_ao486_readcode_done),
+    .transducer_ao486_readcode_partial_done (transducer_ao486_readcode_partial_done), 
+    .transducer_ao486_writeburst_done       (transducer_ao486_writeburst_done),
+    .transducer_ao486_writeline_done        (transducer_ao486_writeline_done),
+    .transducer_ao486_readburst_done        (transducer_ao486_readburst_done),
+    .transducer_ao486_readburst_data        (transducer_ao486_readburst_data),
+    .transducer_ao486_readline_done         (transducer_ao486_readline_done),
+    .transducer_ao486_readline_line         (transducer_ao486_readline_line)
 );
 
 //------------------------------------------------------------------------------

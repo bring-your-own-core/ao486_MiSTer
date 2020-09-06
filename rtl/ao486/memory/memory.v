@@ -147,9 +147,79 @@ module memory(
     
     input               avm_waitrequest,
     input               avm_readdatavalid,
-    input       [31:0]  avm_readdata
+    input       [31:0]  avm_readdata,
+    output      [1:0]   state_transducer,
+
+    // new outputs for bypassing Avalon
+    output              ifill_req_readcode_do,
+    output  [31:0]      ifill_req_readcode_address,
+    output              store_req_writeburst_do,
+    output  [31:0]      store_req_writeburst_address,
+    output  [55:0]      store_req_writeburst_data,
+    output  [3:0]       store_req_writeburst_length,
+    output              store_req_writeline_do,
+    output  [31:0]      store_req_writeline_address,
+    output  [127:0]     store_req_writeline_line,
+    output              load_req_readburst_do,
+    output  [31:0]      load_req_readburst_address,
+    output  [3:0]       load_req_readburst_byte_length,
+    output              load_req_readline_do,
+    output  [31:0]      load_req_readline_address,
+
+    // new inputs for bypassing Avalon
+    input       [127:0] transducer_ao486_readcode_line,
+    input       [31:0]  transducer_ao486_readcode_partial,
+    input               transducer_ao486_readcode_done,
+    input               transducer_ao486_readcode_partial_done,
+    input               transducer_ao486_writeburst_done,
+    input               transducer_ao486_writeline_done,
+    input               transducer_ao486_readburst_done,
+    input       [95:0]  transducer_ao486_readburst_data,
+    input               transducer_ao486_readline_done,
+    input       [127:0] transducer_ao486_readline_line
 );
 
+assign ifill_req_readcode_do = req_readcode_do;
+assign ifill_req_readcode_address = req_readcode_address;
+assign store_req_writeburst_do = req_writeburst_do;
+assign store_req_writeburst_address = req_writeburst_address;
+assign store_req_writeburst_data = req_writeburst_data;
+assign store_req_writeburst_length = req_writeburst_length;
+assign store_req_writeline_do = req_writeline_do;
+assign store_req_writeline_address = req_writeline_address;
+assign store_req_writeline_line = req_writeline_line;
+assign load_req_readburst_do = req_readburst_do;
+assign load_req_readburst_address = req_readburst_address;
+assign load_req_readburst_byte_length = req_readburst_byte_length;
+assign load_req_readline_do = req_readline_do;
+assign load_req_readline_address = req_readline_address;
+
+always @(posedge clk) begin
+    if(ifill_req_readcode_do) begin
+    $display("_do triggered for ifill: time=%0t address=%0h", $time, ifill_req_readcode_address);
+    end
+end
+always @(posedge clk) begin
+    if(store_req_writeburst_do) begin
+    $display("_do triggered for store: time=%0t address=%0h length=%0h data=%0h", $time, store_req_writeburst_address, store_req_writeburst_length, store_req_writeburst_data);
+    end
+end
+always @(posedge clk) begin
+    if(load_req_readburst_do) begin
+    $display("_do triggered for load: time=%0t address=%0h length=%0h", $time, load_req_readburst_address, load_req_readburst_byte_length);
+    end
+end
+
+always @(posedge clk) begin
+    if(transducer_ao486_readcode_done) begin
+    $display("_done triggered for ifill: time=%0t readcode_line=%0h", $time, transducer_ao486_readcode_line);
+    end
+end
+always @(posedge clk) begin
+    if(transducer_ao486_readburst_done) begin
+    $display("_done triggered for load: time=%0t readburst_data=%0h", $time, transducer_ao486_readburst_data);
+    end
+end
 
 //------------------------------------------------------------------------------
 
@@ -160,6 +230,7 @@ wire [1:0]  req_writeburst_dword_length;
 wire [3:0]  req_writeburst_byteenable_0;
 wire [3:0]  req_writeburst_byteenable_1;
 wire [55:0] req_writeburst_data;
+wire [3:0]  req_writeburst_length; 
 
 wire        resp_writeburst_do;
 wire        resp_writeburst_done;
@@ -304,7 +375,7 @@ wire [31:0]  req_readcode_address;
 wire [127:0] req_readcode_line;
 wire [31:0]  req_readcode_partial;
 wire         req_readcode_partial_done;
-    
+
 wire         resp_readcode_do;
 wire         resp_readcode_done;
 wire [31:0]  resp_readcode_address;
@@ -568,7 +639,8 @@ avalon_mem avalon_mem_inst(
     
     .avm_waitrequest            (avm_waitrequest),              //input
     .avm_readdatavalid          (avm_readdatavalid),            //input
-    .avm_readdata               (avm_readdata)                  //input [31:0]
+    .avm_readdata               (avm_readdata),                  //input [31:0]
+    .state_transducer           (state_transducer)
 );
 
 //------------------------------------------------------------------------------
@@ -601,25 +673,25 @@ dcache dcache_inst(
     
     //REQ:
     .readline_do            (req_readline_do),      //output
-    .readline_done          (req_readline_done),    //input
+    .readline_done          (transducer_ao486_readline_done),    //input
     
     .readline_address       (req_readline_address),   //output [31:0]
-    .readline_line          (req_readline_line),      //input [127:0]
+    .readline_line          (transducer_ao486_readline_line),      //input [127:0]
     //END
     
     //REQ:
     .readburst_do               (req_readburst_do),             //output
-    .readburst_done             (req_readburst_done),           //input
+    .readburst_done             (transducer_ao486_readburst_done),           //input
     
     .readburst_address          (req_readburst_address),        //output [31:0]
     .readburst_dword_length     (req_readburst_dword_length),   //output [1:0]
     .readburst_byte_length      (req_readburst_byte_length),    //output [3:0]
-    .readburst_data             (req_readburst_data),           //input [95:0]
+    .readburst_data             (transducer_ao486_readburst_data),           //input [95:0]
     //END
     
     //REQ:
     .writeline_do               (req_writeline_do),         //output
-    .writeline_done             (req_writeline_done),       //input
+    .writeline_done             (transducer_ao486_writeline_done),       //input
     
     .writeline_address          (req_writeline_address),    //output [31:0]
     .writeline_line             (req_writeline_line),       //output [127:0]
@@ -627,13 +699,14 @@ dcache dcache_inst(
     
     //REQ:
     .writeburst_do              (req_writeburst_do),            //output
-    .writeburst_done            (req_writeburst_done),          //input
+    .writeburst_done            (transducer_ao486_writeburst_done),          //input
     
     .writeburst_address         (req_writeburst_address),       //output [31:0]
     .writeburst_dword_length    (req_writeburst_dword_length),  //output [1:0]
     .writeburst_byteenable_0    (req_writeburst_byteenable_0),  //output [3:0]
     .writeburst_byteenable_1    (req_writeburst_byteenable_1),  //output [3:0]
     .writeburst_data            (req_writeburst_data),          //output [55:0]
+    .writeburst_length          (req_writeburst_length),        //output [3:0]
     //END
     
     .dcachetoicache_write_do        (dcachetoicache_write_do),         //output
@@ -690,12 +763,12 @@ icache icache_inst(
     
     //REQ:
     .readcode_do                (req_readcode_do),              //output
-    .readcode_done              (req_readcode_done),            //input
+    .readcode_done              (transducer_ao486_readcode_done),            //input
     
     .readcode_address           (req_readcode_address),         //output [31:0]
-    .readcode_line              (req_readcode_line),            //input [127:0]
-    .readcode_partial           (req_readcode_partial),         //input [31:0]
-    .readcode_partial_done      (req_readcode_partial_done),    //input
+    .readcode_line              (transducer_ao486_readcode_line),            //input [127:0]
+    .readcode_partial           (transducer_ao486_readcode_partial),         //input [31:0]
+    .readcode_partial_done      (transducer_ao486_readcode_partial_done),    //input
     //END
     
     //REQ:
